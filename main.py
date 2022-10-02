@@ -27,7 +27,7 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement, length):
         emitter = l3.end
     elif operator == '|':
         l1 = drawing.add(elm.Line().down(length).at(collector))
-        l2 = drawing.add(elm.Line().left().at(l1.end))
+        l2 = drawing.add(elm.Line().right().at(l1.end))
         l3a = drawing.add(elm.Line().down(length).at(l2.end))
         l3b = drawing.add(elm.Line().down(length).at(l1.end))
         em1 = build_circut(drawing, l3a.end, s1, length)
@@ -56,7 +56,6 @@ with schemdraw.Drawing() as draw:
     line = draw.add(elm.Line().down(0.0001 * draw.unit))
     draw.add(elm.Resistor().up().at(line.start))
     draw.add(elm.Label().label('+'))
-    build_circut(draw, line.end, "(((A)|(B))&"
-                                   "(!((B)&(A))))", draw.unit * 0.3)
-    draw.add(elm.LED().down())
+    em = build_circut(draw, line.end, "((A)|(!(B)))", draw.unit * 0.3)
+    draw.add(elm.LED().down().at(em))
     draw.add(elm.Line().down(0.0001 * draw.unit).label('-'))
