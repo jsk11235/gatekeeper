@@ -1,17 +1,20 @@
 import schemdraw
 import schemdraw.elements as elm
+sizes = {}
 
-
-def compute_size(statement, length):
+def compute_size(statement, drawing):
+    global sizes
+    if statement in sizes.keys():
+        return sizes[statement]
     if statement == '':
-        return {"left": 0, "right": 0, "down": 0}
+        return {"left": 0.1*drawing.unit, "right": 0.1*drawing.unit, "down": 0.1*drawing.unit}
     total_paren = 0
     split_idx = 0
     operator = ''
     is_enclosed = statement[0] == '('
-    left_size = 1
-    right_size = 1
-    vert_size = 1
+    left_size = 0.5*drawing.unit
+    right_size = 0.5*drawing.unit
+    vert_size = 0.5*drawing.unit
     if is_enclosed:
         start = 1
         end = len(statement) - 1
@@ -33,11 +36,11 @@ def compute_size(statement, length):
 
     s1 = statement[start:split_idx]
     s2 = statement[split_idx + 1:end]
-    s1_size = compute_size(s1,length)
-    s2_size = compute_size(s2,length)
+    s1_size = compute_size(s1, drawing)
+    s2_size = compute_size(s2, drawing)
 
     if operator == '&':
-        vert_size = s1_size["down"] + s2_size["down"] + 5 * length
+        vert_size = s1_size["down"] + s2_size["down"] + drawing.unit
         if s1_size["left"] > s2_size["left"]:
             left_size = s1_size["left"]
         else:
@@ -50,26 +53,27 @@ def compute_size(statement, length):
 
     elif operator == '|':
         if s1_size["down"] > s2_size["down"]:
-            vert_size = s1_size["down"] + 2 * length
+            vert_size = s1_size["down"] + drawing.unit
         else:
-            vert_size = s2_size["down"] + 2 * length
-        left_size = s1_size["left"]
-        right_size = s1_size["right"] + s2_size["left"] + s2_size["right"] + 8*length
+            vert_size = s2_size["down"] + drawing.unit
+        left_size = s2_size["left"]
+        right_size = s1_size["right"] + s1_size["left"] + s2_size["right"] + 0.5*drawing.unit
 
     elif operator == '!':
-        left_size = s2_size["left"] + s2_size["right"]
-        vert_size = s2_size["down"] + 0.5 * length
+        left_size = s2_size["left"] + s2_size["right"]+0.4*drawing.unit
+        vert_size = s2_size["down"] + 0.5*drawing.unit
         right_size = 0
+    sizes[statement] = {"left": left_size, "right": right_size, "down": vert_size}
     return {"left": left_size, "right": right_size, "down": vert_size}
 
 
-def build_circut(drawing: schemdraw.Drawing, collector, statement, length):
+def build_circut(drawing: schemdraw.Drawing, collector, statement):
     total_paren = 0
     split_idx = 0
     operator = ''
-    print(statement)
     is_enclosed = statement[0] == '('
-    print(is_enclosed)
+    if statement=='':
+        return collector
     if is_enclosed:
         start = 1
         end = len(statement) - 1
@@ -91,34 +95,37 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement, length):
 
     s1 = statement[start:split_idx]
     s2 = statement[split_idx + 1:end]
-    size_s1 = compute_size(s1, length)
-    size_s2 = compute_size(s2, length)
+    size_s1 = compute_size(s1, drawing)
+    size_s2 = compute_size(s2, drawing)
     if operator == '&':
-        l1 = drawing.add(elm.Line().down(length).at(collector))
-        em1 = build_circut(drawing, l1.end, s1, length)
-        l2 = drawing.add(elm.Line().down(size_s1["down"]+4*length).at(em1))
-        em2 = build_circut(drawing, l2.end, s2, length)
-        l3 = drawing.add(elm.Line().down(size_s2["down"]+length).at(em2))
+        l1 = drawing.add(elm.Line().down(0.1*drawing.unit).at(collector))
+        em1 = build_circut(drawing, l1.end, s1)
+        l2 = drawing.add(elm.Line().down(size_s1["down"] + 0.1*drawing.unit).at(em1))
+        em2 = build_circut(drawing, l2.end, s2)
+        l3 = drawing.add(elm.Line().down(size_s2["down"] + 0.1*drawing.unit).at(em2))
         emitter = l3.end
     elif operator == '|':
-        l1 = drawing.add(elm.Line().down(length).at(collector))
-        l2 = drawing.add(elm.Line().right(length+size_s1["right"]+size_s2["left"]).at(l1.end))
-        l3a = drawing.add(elm.Line().down(size_s1["down"]).at(l2.end))
-        l3b = drawing.add(elm.Line().down(size_s2["down"]).at(l1.end))
-        em1 = build_circut(drawing, l3a.end, s1, length)
-        em2 = build_circut(drawing, l3b.end, s2, length)
-        l4 = drawing.add(elm.Line().at(em2).to(em1))
+        max_down = max(size_s1['down'], size_s2['down'])
+        l1 = drawing.add(elm.Line().down(0.5*drawing.unit).at(collector))
+        l2 = drawing.add(elm.Line().right(0.5*drawing.unit + size_s1['left'] + size_s2['right']).at(l1.end))
+        l5a = drawing.add(elm.Line().down(0.5*drawing.unit).at(l2.end))
+        l5b = drawing.add(elm.Line().down(0.5*drawing.unit).at(l1.end))
+        em1 = build_circut(drawing, l5a.end, s1)
+        em2 = build_circut(drawing, l5b.end, s2)
+        l3a = drawing.add(elm.Line().down(max_down).at(em1))
+        l3b = drawing.add(elm.Line().down(max_down).at(em2))
+        l4 = drawing.add(elm.Line().at(l3b.end).to(l3a.end))
         emitter = l4.end
     elif operator == '!':
         t = drawing.add(elm.BjtNpn(circle=True).right().anchor('collector').at(collector))
         emitter = t.emitter
-        drawing.add(elm.Resistor().left(length).at(t.base))
-        l2 = drawing.add(elm.Line().up(length))
-        drawing.add(elm.Resistor().up(length).at(l2.end))
+        drawing.add(elm.Resistor().left(size_s2["right"]+0.2*drawing.unit).at(t.base))
+        l2 = drawing.add(elm.Line().up(0.1*drawing.unit))
+        drawing.add(elm.Resistor().up(0.1*drawing.unit).at(l2.end))
         drawing.add(elm.Label().label('+'))
-        l3 = drawing.add(elm.Line().down(length / 2).at(l2.start))
-        em = build_circut(drawing, l3.end, s2, length / 2)
-        drawing.add(elm.Line().down(length / 2).at(em))
+        l3 = drawing.add(elm.Line().down(0.1*drawing.unit).at(l2.start))
+        em = build_circut(drawing, l3.end, s2)
+        drawing.add(elm.Line().down(0.1*drawing.unit).at(em))
         drawing.add(elm.Label().label('-'))
     else:
         t = drawing.add(elm.BjtNpn(circle=True).right().anchor('collector').at(collector).label(operator))
@@ -131,9 +138,11 @@ def full_build(logic):
         line = draw.add(elm.Line().down(0.0001 * draw.unit))
         draw.add(elm.Resistor().up().at(line.start))
         draw.add(elm.Label().label('+'))
-        em = build_circut(draw, line.end, "(" + logic + ")", draw.unit * 0.1)
+        em = build_circut(draw, line.end, "(" + logic + ")")
         draw.add(elm.LED().down().at(em))
         draw.add(elm.Line().down(0.0001 * draw.unit).label('-'))
 
 
-full_build("(A&B)|(!A&!B)")
+p = "!(A&B)"
+q = "!(C|!D)"
+full_build(f'({q})|({p})')
