@@ -155,9 +155,10 @@ def full_build(logic):
         line = draw.add(elm.Line().down(0.0001 * draw.unit))
         draw.add(elm.Resistor().up().at(line.start))
         draw.add(elm.Label().label('+'))
-        em = build_circut(draw, line.end, '(' + logic + ')')
-        draw.add(elm.LED().down().at(em))
-        draw.add(elm.Line().down(0.0001 * draw.unit).label('-'))
+        draw.add(elm.LED().down().at(line.end))
+        l2 = draw.add(elm.Line().down(0.0001 * draw.unit))
+        em = build_circut(draw, l2.end, '(' + logic + ')')
+        draw.add(elm.Line().down(draw.unit).label('-').at(em))
 
 
 p = "!(A&B)"
