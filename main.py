@@ -121,8 +121,6 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement):
         em2 = build_circut(drawing, l2.end, s2)
         l3 = drawing.add(elm.Line().down(size_s2["hang"] + 0.1 * drawing.unit).at(em2))
         emitter = l3.end
-        print(s1, size_s1)
-        print(s2, size_s2)
     elif operator == '|':
         max_down = max(size_s1['hang'], size_s2['hang'])
         l1 = drawing.add(elm.Line().down(0.5 * drawing.unit).at(collector))
@@ -131,9 +129,6 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement):
         l5b = drawing.add(elm.Line().down(0.5 * drawing.unit).at(l1.end))
         em1 = build_circut(drawing, l5a.end, s1)
         em2 = build_circut(drawing, l5b.end, s2)
-        print(s1, size_s1)
-        print(s2, size_s2)
-        print(max_down)
         l3a = drawing.add(elm.Line().down(max_down).at(em1))
         l3b = drawing.add(elm.Line().down(max_down).at(em2))
         l4 = drawing.add(elm.Line().at(l3b.end).to(l3a.end))
