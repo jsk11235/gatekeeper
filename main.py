@@ -101,8 +101,6 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement):
     s2 = statement[split_idx + 1:end]
     size_s1 = compute_size(s1, drawing)
     size_s2 = compute_size(s2, drawing)
-    print(size_s1,s1)
-    print(size_s2,s2)
     if operator == '&':
         l1 = drawing.add(elm.Line().down(0.2 * drawing.unit).at(collector))
         em1 = build_circut(drawing, l1.end, s1)
