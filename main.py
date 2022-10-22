@@ -118,9 +118,11 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement):
         if size_s1['hang'] > size_s2['hang']:
             l3c = drawing.add(elm.Line().down(size_s1['hang'] - size_s2['hang']).at(em2))
             l4 = drawing.add(elm.Line().at(l3c.end).to(em1))
-        else:
+        elif size_s2['hang'] > size_s1['hang']:
             l3c = drawing.add(elm.Line().down(size_s2['hang'] - size_s1['hang']).at(em1))
             l4 = drawing.add(elm.Line().at(em2).to(l3c.end))
+        else:
+            l4 = drawing.add(elm.Line().at(em2).to(em1))
         emitter = l4.end
     elif operator == '!':
         t = drawing.add(elm.BjtNpn(circle=True).right().anchor('collector').at(collector))
@@ -154,4 +156,4 @@ def full_build(logic):
 p = "!(A&B)"
 q = "!(C|!D)"
 #full_build(f'{q}')
-full_build(f'({q})|(((!E)|F)&({p}))')
+full_build(f'({q})|((!(E|F))&({p}))')
