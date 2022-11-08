@@ -15,37 +15,37 @@ def compute_size(statement, drawing):
     total_paren = 0
     split_idx = 0
     operator = ''
-    is_enclosed = statement[0] == '('
     left_size = 0.5 * drawing.unit
     right_size = 0.5 * drawing.unit
-    vert_size = 0.5*drawing.unit
     hang_size = 0.5 * drawing.unit
-    if is_enclosed:
-        start = 1
-        end = len(statement) - 1
-    else:
-        start = 0
-        end = len(statement)
+    start = 0
+    end = len(statement)
+    min_paren = 0
+    used_min_paren = 0
     for i in range(start, end):
         c = statement[i]
         if c == '(':
+            if i == total_paren:
+                min_paren += 1
             total_paren += 1
         elif c == ')':
             total_paren -= 1
-        elif total_paren == 0 and (c == '&' or c == '!' or c == '|'):
+            if total_paren < min_paren:
+                min_paren -= 1
+        elif total_paren == min_paren and (c == '&' or (c == '!' and operator == '') or c == '|'):
             operator = statement[i]
+            used_min_paren = min_paren
             split_idx = i
-            break
     if len(operator) == 0:
         operator = statement
 
-    s1 = statement[start:split_idx]
-    s2 = statement[split_idx + 1:end]
+    s1 = statement[used_min_paren:split_idx]
+    s2 = statement[split_idx + 1:end - used_min_paren]
     s1_size = compute_size(s1, drawing)
     s2_size = compute_size(s2, drawing)
 
     if operator == '&':
-        vert_size = s1_size["hang"] + s2_size["hang"] + drawing.unit*0.7
+        vert_size = s1_size["hang"] + s2_size["hang"] + drawing.unit * 0.7
         hang_size = vert_size
         if s1_size["left"] > s2_size["left"]:
             left_size = s1_size["left"]
@@ -66,7 +66,7 @@ def compute_size(statement, drawing):
     elif operator == '!':
         hang_size = 0.5 * drawing.unit + s2_size["hang"]
         left_size = s2_size["left"] + s2_size["right"] + 0.4 * drawing.unit
-        right_size = 0.5*drawing.unit
+        right_size = 0.5 * drawing.unit
     sizes[statement] = {"left": left_size, "right": right_size, "hang": hang_size}
     return {"left": left_size, "right": right_size, "hang": hang_size}
 
@@ -75,30 +75,35 @@ def build_circut(drawing: schemdraw.Drawing, collector, statement):
     total_paren = 0
     split_idx = 0
     operator = ''
-    is_enclosed = statement[0] == '('
+    print(statement)
     if statement == '':
         return collector
-    if is_enclosed:
-        start = 1
-        end = len(statement) - 1
-    else:
-        start = 0
-        end = len(statement)
+    start = 0
+    end = len(statement)
+    min_paren = 0
+    used_min_paren = 0
+    allow_not = True
     for i in range(start, end):
         c = statement[i]
         if c == '(':
+            if i == total_paren:
+                min_paren += 1
             total_paren += 1
         elif c == ')':
             total_paren -= 1
-        elif total_paren == 0 and (c == '&' or c == '!' or c == '|'):
+            if total_paren < min_paren:
+                min_paren -= 1
+        elif total_paren == min_paren and (c == '&' or (c == '!' and operator == '') or c == '|'):
             operator = statement[i]
+            used_min_paren = min_paren
             split_idx = i
-            break
+
+    print(total_paren)
     if len(operator) == 0:
         operator = statement
 
-    s1 = statement[start:split_idx]
-    s2 = statement[split_idx + 1:end]
+    s1 = statement[used_min_paren:split_idx]
+    s2 = statement[split_idx + 1:end - used_min_paren]
     size_s1 = compute_size(s1, drawing)
     size_s2 = compute_size(s2, drawing)
     if operator == '&':
@@ -155,5 +160,5 @@ def full_build(logic):
 
 p = "!(A&B)"
 q = "!(C|!D)"
-#full_build(f'{q}')
-full_build(f'({q})|((!(E|F))&({p}))')
+# full_build(f'{q}')
+full_build(f'({q}|((!(E|F))&{p}))|(!(G&H))')
